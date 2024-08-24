@@ -1,0 +1,18 @@
+{
+    "CODE": "aasc_interview_round_2",
+    "VERSION": "1",
+    "VERSION_DATE": "2024-08-22",
+    "NAME": "My Bitrix24 App",
+    "DESCRIPTION": "This is a sample Bitrix24 app.",
+    "INSTALL_URL": "https://ec70-58-186-129-127.ngrok-free.app/bitrix/event",
+    "UNINSTALL_URL": "https://ec70-58-186-129-127.ngrok-free.app/bitrix/event",
+    "URL": {
+        "ONAPPINSTALL": "https://ec70-58-186-129-127.ngrok-free.app/bitrix/event",
+        "ONAPPUNINSTALL": "https://ec70-58-186-129-127.ngrok-free.app/bitrix/event"
+    },
+    "SCOPE": [
+        "user", 
+        "crm",
+        "im"
+    ]
+}

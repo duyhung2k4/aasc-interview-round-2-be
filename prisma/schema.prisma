@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // or "mysql", "sqlite", etc.
+  url      = env("DATABASE_URL")
+}
+
+
+model tokens {
+    id Int @id @default(autoincrement())
+
+    bitrix_id Int @unique
+    expires String
+    expires_in Int
+    access_token String @unique
+    refresh_token String @unique
+
+    bitrix bitrixs @relation(fields: [bitrix_id], references: [id])
+
+    created_at DateTime @default(now())
+    updated_at DateTime? @updatedAt
+    deleted_at DateTime?
+}
+
+model bitrixs {
+    id Int @id @default(autoincrement())
+
+    member_id String
+    application_token String @unique
+    client_id String @unique
+    client_secret String @default("")
+    email String @default("")
+    password String @default("")
+    domain String 
+    server_endpoint String
+    client_endpoint String
+    active Boolean @default(false)
+
+    tokens tokens[]
+
+    created_at DateTime @default(now())
+    updated_at DateTime? @updatedAt
+    deleted_at DateTime?
+}
+
+model accept_codes {
+    id Int @id @default(autoincrement())
+
+    expires DateTime
+    code String
+    email String
+    client_id String
+    client_secret String
+    password String
+
+    created_at DateTime @default(now())
+    updated_at DateTime? @updatedAt
+    deleted_at DateTime?
+
+    @@unique([client_id, created_at])
+}
