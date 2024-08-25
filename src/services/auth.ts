@@ -1,7 +1,7 @@
 import pgClient from "../config/connect";
 import dayjs from "dayjs";
 import { Client, QueryConfig } from "pg";
-import { RegisterRequest, BitrixInstallRequest, AcceptCodeRequest } from "../dto/request/auth";
+import { RegisterRequest, BitrixInstallRequest, AcceptCodeRequest, LoginRequest } from "../dto/request/auth";
 import { BitrixModel } from "../models/bitrix";
 import { TokenModel } from "../models/token";
 import { AcceptCodeModel } from "../models/accept_code";
@@ -19,6 +19,7 @@ export class AuthService {
 
         this.installApp = this.installApp.bind(this);
         this.createAccpetCode = this.createAccpetCode.bind(this);
+        this.login = this.login.bind(this);
     }
 
     async installApp(payload: BitrixInstallRequest, client_id: string): Promise<BitrixModel | Error> {
@@ -270,6 +271,36 @@ export class AuthService {
             await this.pgClient.query<BitrixModel>(queryUpdateBitrix);
 
             return true;
+        } catch (error) {
+            return new Error(JSON.stringify(error));
+        }
+    }
+
+    async login(payload: LoginRequest): Promise<BitrixModel | Error> {
+        try {
+            const queryBitrix: QueryConfig = {
+                text: `
+                    SELECT * FROM bitrixs
+                    WHERE client_id = $1
+                `,
+                values: [payload.client_id]
+            }
+
+            const result = await this.pgClient.query<BitrixModel>(queryBitrix);
+            if(!result.rowCount) {
+                throw new Error("bitrixs not found");
+            }
+
+            const isPasswordTrue = await this.sercurityUtils.comparePassword(payload.password, result.rows[0].password);
+            if(isPasswordTrue instanceof Error) {
+                throw new Error(JSON.stringify(isPasswordTrue));
+            }
+
+            if(!isPasswordTrue) {
+                throw new Error("password wrong");
+            }
+
+            return result.rows[0];
         } catch (error) {
             return new Error(JSON.stringify(error));
         }

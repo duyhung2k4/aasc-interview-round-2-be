@@ -1,22 +1,27 @@
-import { RegisterRequest, BitrixInstallRequest, AcceptCodeRequest } from "../dto/request/auth";
-import { AuthService } from "../services/auth";
+import SMTPTransport from "nodemailer/lib/smtp-transport";
+import emailTransporter from "../config/smpt";
 import HttpUtils from "../utils/http";
+import EventEmitter from "events";
+import emitter from "../config/emit";
+
+import { RegisterRequest, BitrixInstallRequest, AcceptCodeRequest, LoginRequest } from "../dto/request/auth";
+import { AuthService } from "../services/auth";
 import { Request, Response } from "express";
 import { QueryUtils } from "../utils/query";
 import { TimeModel } from "../models/time";
-import { AppInfoResponse, RegisterRepsone } from "../dto/response/auth";
-import EventEmitter from "events";
-import emitter from "../config/emit";
+import { AppInfoResponse, LoginResponse, RegisterRepsone } from "../dto/response/auth";
 import { Transporter } from "nodemailer";
-import SMTPTransport from "nodemailer/lib/smtp-transport";
-import emailTransporter from "../config/smpt";
+import { JwtUtils } from "../utils/jwt";
+
+
 
 export class AuthController {
     private httpUtils: HttpUtils;
     private queryUtils: QueryUtils;
     private authService: AuthService;
     private emitter: EventEmitter;
-    private emailTransporter: Transporter<SMTPTransport.SentMessageInfo>
+    private emailTransporter: Transporter<SMTPTransport.SentMessageInfo>;
+    private jwtUitls: JwtUtils;
 
     constructor() {
         this.emitter = emitter;
@@ -24,11 +29,13 @@ export class AuthController {
         this.httpUtils = new HttpUtils();
         this.queryUtils = new QueryUtils();
         this.authService = new AuthService();
+        this.jwtUitls = new JwtUtils();
 
         this.eventInstallApp = this.eventInstallApp.bind(this);
         this.getToken = this.getToken.bind(this);
         this.register = this.register.bind(this);
         this.acceptCode = this.acceptCode.bind(this);
+        this.login = this.login.bind(this);
     }
 
     async eventInstallApp(req: Request, res: Response) {
@@ -55,7 +62,7 @@ export class AuthController {
             this.httpUtils.SuccessResponse(res, result);
         } catch (error) {
             console.log(error);
-            this.httpUtils.ErrorResponse(res, new Error(`${error}`));
+            this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
     }
 
@@ -82,7 +89,7 @@ export class AuthController {
 
             this.httpUtils.SuccessResponse(res, response);
         } catch (error) {
-            this.httpUtils.ErrorResponse(res, new Error(`${error}`));
+            this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
     }
 
@@ -97,7 +104,37 @@ export class AuthController {
 
             this.httpUtils.SuccessResponse(res, result);
         } catch (error) {
-            this.httpUtils.ErrorResponse(res, new Error(`${error}`));
+            this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
+        }
+    }
+
+    async login(req: Request, res: Response) {
+        try {
+            const data = req.body as LoginRequest;
+            const result = await this.authService.login(data);
+
+            if(result instanceof Error) {
+                throw new Error(JSON.stringify(result));
+            }
+
+            const access_token: string = this.jwtUitls.createToken({
+                client_id: result.client_id,
+                bitrix_id: result.id,
+            }, "access_token");
+
+            const refresh_token: string = this.jwtUitls.createToken({
+                client_id: result.client_id,
+                bitrix_id: result.id,
+            }, "refresh_token");
+
+            const responseData: LoginResponse = {
+                access_token,
+                refresh_token,
+            }
+
+            this.httpUtils.SuccessResponse(res, responseData);
+        } catch (error) {
+            this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
     }
 
@@ -110,7 +147,7 @@ export class AuthController {
 
             this.httpUtils.SuccessResponse(res, result);
         } catch (error) {
-            this.httpUtils.ErrorResponse(res, new Error(`${error}`));
+            this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
     }
 }

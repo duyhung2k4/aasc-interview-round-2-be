@@ -31,3 +31,8 @@ export type AcceptCodeRequest = {
     accept_code_id: number
     code: string
 }
+
+export type LoginRequest = {
+    client_id: string
+    password: string
+}

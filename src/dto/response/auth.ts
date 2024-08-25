@@ -18,3 +18,8 @@ export type RegisterRepsone = {
     expires: Date
     expires_repeat_code: Date
 }
+
+export type LoginResponse = {
+    access_token: string
+    refresh_token: string
+}

@@ -5,7 +5,7 @@ export class QueryUtils {
     async axiosBaseQuery<T>(payload: PayloadQuery): Promise<T | Error> {
         try {
             const result = await axios({
-                url: `${payload.baseUrl}/${payload.data.url}`,
+                url: `${payload.baseUrl}${payload.data.url}`,
                 method: payload.data.method,
                 data: payload.data.data,
                 params: payload.data.params,
