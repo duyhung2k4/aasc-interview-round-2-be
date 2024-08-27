@@ -11,7 +11,6 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.APP_PORT);
-const HOST = `${process.env.APP_HOST}`;
 
 app.use(express.static(path.join(__dirname, '../')));
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -21,11 +20,11 @@ app.use(morgan('combined'))
 
 app.use(router);
 
-app.listen(PORT, HOST,async () => {
+app.listen(PORT, async () => {
     try {
         setUpEmitter();
         await init();
-        console.log(`Server is listening on http://${HOST}:${PORT}`);
+        console.log(`Run server successfully!`);
     } catch (error) {
         console.log(error);
     }

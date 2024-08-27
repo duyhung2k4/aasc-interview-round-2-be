@@ -117,15 +117,13 @@ export class AuthController {
                 throw new Error(JSON.stringify(result));
             }
 
-            const access_token: string = this.jwtUitls.createToken({
-                client_id: result.client_id,
-                bitrix_id: result.id,
-            }, "access_token");
+            if(!result.token) {
+                throw new Error("token not found");
+            }
 
-            const refresh_token: string = this.jwtUitls.createToken({
-                client_id: result.client_id,
-                bitrix_id: result.id,
-            }, "refresh_token");
+            const access_token: string = result.token?.access_token;
+
+            const refresh_token: string = result.token?.refresh_token;
 
             const responseData: LoginResponse = {
                 access_token,

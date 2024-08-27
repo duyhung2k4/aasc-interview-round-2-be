@@ -6,6 +6,7 @@ import { BitrixModel } from "../models/bitrix";
 import { TokenModel } from "../models/token";
 import { AcceptCodeModel } from "../models/accept_code";
 import { SercurityUtils } from "../utils/sercurity";
+import { COLUMN_TABLE } from "../constant/table";
 
 
 
@@ -278,20 +279,46 @@ export class AuthService {
 
     async login(payload: LoginRequest): Promise<BitrixModel | Error> {
         try {
+            let bitrixResult: Record<string, any> = {
+                token: {}
+            }
+            const c_bitrixs = COLUMN_TABLE.bitrixs.map(c => `b.${c} as b__${c}`);
+            const c_tokens = COLUMN_TABLE.tokens.map(c => `t.${c} as t__${c}`);
             const queryBitrix: QueryConfig = {
                 text: `
-                    SELECT * FROM bitrixs
+                    SELECT
+                        ${c_bitrixs.join(",")},
+                        ${c_tokens.join(",")}
+                    FROM bitrixs as b
+                    JOIN tokens as t ON t.bitrix_id = b.id
                     WHERE client_id = $1
                 `,
                 values: [payload.client_id]
             }
 
-            const result = await this.pgClient.query<BitrixModel>(queryBitrix);
+            const result = await this.pgClient.query<Record<string, any>>(queryBitrix);
             if(!result.rowCount) {
                 throw new Error("bitrixs not found");
             }
 
-            const isPasswordTrue = await this.sercurityUtils.comparePassword(payload.password, result.rows[0].password);
+            Object.keys(result.rows[0]).forEach(key => {
+                const type = key.split("__")[0];
+                const field = key.split("__")[1];
+                switch (type) {
+                    case "b":
+                        bitrixResult[field] = result.rows[0][key];
+                        break;
+                    case "t":
+                        bitrixResult.token[field] = result.rows[0][key];
+                        break;
+                    default:
+                        break;
+                }
+            });
+
+            const bitrixRes = bitrixResult as BitrixModel;
+
+            const isPasswordTrue = await this.sercurityUtils.comparePassword(payload.password, bitrixRes.password);
             if(isPasswordTrue instanceof Error) {
                 throw new Error(JSON.stringify(isPasswordTrue));
             }
@@ -300,7 +327,7 @@ export class AuthService {
                 throw new Error("password wrong");
             }
 
-            return result.rows[0];
+            return bitrixRes;
         } catch (error) {
             return new Error(JSON.stringify(error));
         }
