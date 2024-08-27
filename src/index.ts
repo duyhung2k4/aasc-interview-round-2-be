@@ -24,7 +24,7 @@ app.use(router);
 app.listen(PORT, HOST,async () => {
     try {
         setUpEmitter();
-        await init();
+        // await init();
         console.log(`Server is listening on http://${HOST}:${PORT}`);
     } catch (error) {
         console.log(error);
