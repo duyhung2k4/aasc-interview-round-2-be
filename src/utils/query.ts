@@ -1,19 +1,19 @@
-import axios from 'axios'
-import type { AxiosRequestConfig, AxiosError } from 'axios'
+import axios, { AxiosError } from 'axios'
+import type { AxiosRequestConfig, AxiosResponse } from 'axios'
 
 export class QueryUtils {
     async axiosBaseQuery<T>(payload: PayloadQuery): Promise<T | Error> {
+        console.log(`${payload.baseUrl}${payload.data.url}`)
         try {
             const result = await axios({
                 url: `${payload.baseUrl}${payload.data.url}`,
                 method: payload.data.method,
                 data: payload.data.data,
                 params: payload.data.params,
-            })
+            });
             return result.data;
         } catch (axiosError) {
-            const err = axiosError as AxiosError
-            return err;
+            return axiosError as AxiosError;
         }
     }
 }

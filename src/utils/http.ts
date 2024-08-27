@@ -25,7 +25,7 @@ export default class HttpUtils {
         res.status(401).json(dataRes);
     }
 
-    SuccessResponse(res: Response, data: any) {
+    SuccessResponse(res: Response, data: any, newToken?: string) {
         const dataRes: ResponsData<any> = {
             data: data,
             message: "OK",
@@ -42,4 +42,5 @@ export type ResponsData<T> = {
     message: string
     error: Error | null
     status: number
+    newToken?: string
 }

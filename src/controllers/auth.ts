@@ -11,7 +11,8 @@ import { QueryUtils } from "../utils/query";
 import { TimeModel } from "../models/time";
 import { AppInfoResponse, LoginResponse, RegisterRepsone } from "../dto/response/auth";
 import { Transporter } from "nodemailer";
-import { JwtUtils } from "../utils/jwt";
+import { RedisClientType } from "redis";
+import { redisClient } from "../config/connect";
 
 
 
@@ -21,15 +22,16 @@ export class AuthController {
     private authService: AuthService;
     private emitter: EventEmitter;
     private emailTransporter: Transporter<SMTPTransport.SentMessageInfo>;
-    private jwtUitls: JwtUtils;
+    private clientRedis: RedisClientType;
+    
 
     constructor() {
         this.emitter = emitter;
         this.emailTransporter = emailTransporter;
+        this.clientRedis = redisClient
         this.httpUtils = new HttpUtils();
         this.queryUtils = new QueryUtils();
         this.authService = new AuthService();
-        this.jwtUitls = new JwtUtils();
 
         this.eventInstallApp = this.eventInstallApp.bind(this);
         this.getToken = this.getToken.bind(this);
@@ -123,12 +125,13 @@ export class AuthController {
 
             const access_token: string = result.token?.access_token;
 
-            const refresh_token: string = result.token?.refresh_token;
-
             const responseData: LoginResponse = {
                 access_token,
-                refresh_token,
             }
+
+            await this.clientRedis.set(access_token, JSON.stringify({
+                bitrixUrl: result.client_endpoint,
+            }))
 
             this.httpUtils.SuccessResponse(res, responseData);
         } catch (error) {

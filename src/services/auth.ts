@@ -1,5 +1,6 @@
-import pgClient from "../config/connect";
 import dayjs from "dayjs";
+
+import { pgClient, redisClient } from "../config/connect";
 import { Client, QueryConfig } from "pg";
 import { RegisterRequest, BitrixInstallRequest, AcceptCodeRequest, LoginRequest } from "../dto/request/auth";
 import { BitrixModel } from "../models/bitrix";
@@ -7,21 +8,83 @@ import { TokenModel } from "../models/token";
 import { AcceptCodeModel } from "../models/accept_code";
 import { SercurityUtils } from "../utils/sercurity";
 import { COLUMN_TABLE } from "../constant/table";
+import { QueryUtils } from "../utils/query";
+import { OAuthResponse } from "../dto/response/auth";
+import { RedisClientType } from "redis";
 
 
 
 export class AuthService {
     private pgClient: Client;
     private sercurityUtils: SercurityUtils;
+    private queryUtils: QueryUtils;
+    private clientRedis: RedisClientType;
 
     constructor() {
         this.pgClient = pgClient;
         this.sercurityUtils = new SercurityUtils();
+        this.queryUtils = new QueryUtils();
+        this.clientRedis = redisClient;
+
+
+        
+        this._getBitrix = this._getBitrix.bind(this);
 
         this.installApp = this.installApp.bind(this);
         this.createAccpetCode = this.createAccpetCode.bind(this);
         this.login = this.login.bind(this);
+        this.getToken = this.getToken.bind(this);
     }
+
+
+    private async _getBitrix(conditions: { field: string, value: any }[]): Promise<BitrixModel | Error> {
+        try {
+            let bitrixResult: Record<string, any> = {
+                token: {}
+            }
+            const c_bitrixs = COLUMN_TABLE.bitrixs.map(c => `b.${c} as b__${c}`);
+            const c_tokens = COLUMN_TABLE.tokens.map(c => `t.${c} as t__${c}`);
+            const queryBitrix: QueryConfig = {
+                text: `
+                    SELECT
+                        ${c_bitrixs.join(",")},
+                        ${c_tokens.join(",")}
+                    FROM bitrixs as b
+                    JOIN tokens as t ON t.bitrix_id = b.id
+                    WHERE ${conditions.map((c, i) => `${c.field} = $${i + 1}`).join(" AND ")}
+                `,
+                values: [...conditions.map(c => c.value)],
+            }
+
+            const result = await this.pgClient.query<Record<string, any>>(queryBitrix);
+            if (!result.rowCount) {
+                throw new Error("bitrixs not found");
+            }
+
+            Object.keys(result.rows[0]).forEach(key => {
+                const type = key.split("__")[0];
+                const field = key.split("__")[1];
+                switch (type) {
+                    case "b":
+                        bitrixResult[field] = result.rows[0][key];
+                        break;
+                    case "t":
+                        bitrixResult.token[field] = result.rows[0][key];
+                        break;
+                    default:
+                        break;
+                }
+            });
+
+            const bitrixRes = bitrixResult as BitrixModel;
+
+            return bitrixRes;
+        } catch (error) {
+            return error as Error;
+        }
+    }
+
+
 
     async installApp(payload: BitrixInstallRequest, client_id: string): Promise<BitrixModel | Error> {
         try {
@@ -169,7 +232,7 @@ export class AuthService {
             }
 
             const resultBitrix = await this.pgClient.query<BitrixModel>(queryBitrix);
-            if(resultBitrix.rows.length > 0) {
+            if (resultBitrix.rows.length > 0) {
                 throw new Error("exist account");
             }
 
@@ -232,7 +295,7 @@ export class AuthService {
                         expires > $3
                 `,
                 values: [
-                    payload.accept_code_id, 
+                    payload.accept_code_id,
                     payload.code,
                     dayjs().toDate(),
                 ],
@@ -240,7 +303,7 @@ export class AuthService {
 
             const result = await this.pgClient.query<AcceptCodeModel>(queryAcceptCode);
 
-            if(result.rowCount === 0) {
+            if (result.rowCount === 0) {
                 return false;
             }
 
@@ -279,57 +342,86 @@ export class AuthService {
 
     async login(payload: LoginRequest): Promise<BitrixModel | Error> {
         try {
-            let bitrixResult: Record<string, any> = {
-                token: {}
-            }
-            const c_bitrixs = COLUMN_TABLE.bitrixs.map(c => `b.${c} as b__${c}`);
-            const c_tokens = COLUMN_TABLE.tokens.map(c => `t.${c} as t__${c}`);
-            const queryBitrix: QueryConfig = {
-                text: `
-                    SELECT
-                        ${c_bitrixs.join(",")},
-                        ${c_tokens.join(",")}
-                    FROM bitrixs as b
-                    JOIN tokens as t ON t.bitrix_id = b.id
-                    WHERE client_id = $1
-                `,
-                values: [payload.client_id]
-            }
 
-            const result = await this.pgClient.query<Record<string, any>>(queryBitrix);
-            if(!result.rowCount) {
-                throw new Error("bitrixs not found");
+            const bitrixRes = await this._getBitrix([
+                { field: "b.client_id", value: payload.client_id },
+            ]);
+            if (bitrixRes instanceof Error) {
+                throw new Error(JSON.stringify(bitrixRes));
             }
-
-            Object.keys(result.rows[0]).forEach(key => {
-                const type = key.split("__")[0];
-                const field = key.split("__")[1];
-                switch (type) {
-                    case "b":
-                        bitrixResult[field] = result.rows[0][key];
-                        break;
-                    case "t":
-                        bitrixResult.token[field] = result.rows[0][key];
-                        break;
-                    default:
-                        break;
-                }
-            });
-
-            const bitrixRes = bitrixResult as BitrixModel;
 
             const isPasswordTrue = await this.sercurityUtils.comparePassword(payload.password, bitrixRes.password);
-            if(isPasswordTrue instanceof Error) {
+            if (isPasswordTrue instanceof Error) {
                 throw new Error(JSON.stringify(isPasswordTrue));
             }
 
-            if(!isPasswordTrue) {
+            if (!isPasswordTrue) {
                 throw new Error("password wrong");
             }
 
             return bitrixRes;
         } catch (error) {
             return new Error(JSON.stringify(error));
+        }
+    }
+
+    async getToken(oldAccessToken: string): Promise<string | Error> {
+        try {
+            const bitrixResult = await this._getBitrix([
+                { field: "t.access_token", value: oldAccessToken }
+            ]);
+
+            if (bitrixResult instanceof Error) {
+                throw new Error(JSON.stringify(bitrixResult));
+            };
+
+            if (!bitrixResult.token) {
+                throw new Error("token in bitrix not found");
+            }
+
+            const bitrixTokenResult = await this.queryUtils.axiosBaseQuery<OAuthResponse>({
+                baseUrl: bitrixResult.domain,
+                data: {
+                    method: "GET",
+                    url: "/oauth/token",
+                    params: {
+                        refresh_token: bitrixResult.token.refresh_token,
+                        client_secret: bitrixResult.client_secret,
+                        grant_type: "refresh_token",
+                        client_id: bitrixResult.client_id,
+                    }
+                }
+            });
+
+            if(bitrixTokenResult instanceof Error) {
+                throw new Error(JSON.stringify(bitrixTokenResult));
+            }
+
+            const queryUpdateToken: QueryConfig = {
+                text: `
+                    UPDATE tokens
+                    SET
+                        access_token = $1,
+                        refresh_token = $2
+                    WHERE access_token = $3
+                    `,
+                values: [
+                    bitrixTokenResult.access_token,
+                    bitrixTokenResult.refresh_token,
+                    oldAccessToken,
+                ]
+            }
+
+            await this.pgClient.query<TokenModel>(queryUpdateToken);
+
+            await this.clientRedis.del([oldAccessToken]);
+            await this.clientRedis.set(bitrixTokenResult.access_token, JSON.stringify({
+                bitrixUrl: bitrixTokenResult.client_endpoint,
+            }));
+
+            return bitrixTokenResult.access_token;
+        } catch (error) {
+            return error as Error;
         }
     }
 }

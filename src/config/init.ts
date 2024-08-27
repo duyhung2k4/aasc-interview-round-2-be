@@ -1,8 +1,9 @@
-import { pgConnect } from "./connect";
+import { pgConnect, redisConnect } from "./connect";
 
 const init = async () => {
     try {
         await pgConnect();
+        await redisConnect();
     } catch (error) {
         console.log(error);
     }
