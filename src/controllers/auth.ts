@@ -147,7 +147,9 @@ export class AuthController {
             const result = {
                 body: req.body,
                 query: req.query,
-            }
+            };
+
+            console.log(result);
 
             this.httpUtils.SuccessResponse(req, res, result);
         } catch (error) {

@@ -1,7 +1,8 @@
 import dayjs from "dayjs";
 
-import { pgClient, redisClient } from "../config/connect";
+import { RedisClientType } from "redis";
 import { Client, QueryConfig } from "pg";
+import { pgClient, redisClient } from "../config/connect";
 import { RegisterRequest, BitrixInstallRequest, AcceptCodeRequest, LoginRequest } from "../dto/request/auth";
 import { BitrixModel } from "../models/bitrix";
 import { TokenModel } from "../models/token";
@@ -10,7 +11,6 @@ import { SercurityUtils } from "../utils/sercurity";
 import { COLUMN_TABLE } from "../constant/table";
 import { QueryUtils } from "../utils/query";
 import { OAuthResponse } from "../dto/response/auth";
-import { RedisClientType } from "redis";
 import { BitrixInfoRedis } from "../models/redis";
 
 
@@ -416,11 +416,11 @@ export class AuthService {
 
             await this.pgClient.query<TokenModel>(queryUpdateToken);
 
-            await this.clientRedis.del([oldAccessToken]);
             await this.clientRedis.set(bitrixTokenResult.access_token, JSON.stringify({
                 bitrixUrl: bitrixTokenResult.client_endpoint,
                 exp: dayjs.unix(bitrixTokenResult.expires).toDate(),
             } as BitrixInfoRedis));
+            await this.clientRedis.del([oldAccessToken]);
 
             return bitrixTokenResult.access_token;
         } catch (error) {
