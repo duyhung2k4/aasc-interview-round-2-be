@@ -16,3 +16,7 @@ export type UpdateRequisiteRequest = {
         "RQ_ACC_NUM"?: string
     }
 }
+
+export type DeleteRequisiteRequest = {
+    id: string
+}

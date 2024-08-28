@@ -3,6 +3,7 @@ import emailTransporter from "../config/smpt";
 import HttpUtils from "../utils/http";
 import EventEmitter from "events";
 import emitter from "../config/emit";
+import dayjs from "dayjs";
 
 import { RegisterRequest, BitrixInstallRequest, AcceptCodeRequest, LoginRequest } from "../dto/request/auth";
 import { AuthService } from "../services/auth";
@@ -14,7 +15,6 @@ import { Transporter } from "nodemailer";
 import { RedisClientType } from "redis";
 import { redisClient } from "../config/connect";
 import { BitrixInfoRedis } from "../models/redis";
-import dayjs from "dayjs";
 
 
 

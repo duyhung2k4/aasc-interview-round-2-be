@@ -1,11 +1,13 @@
-import { AddRequisiteRequest, UpdateRequisiteRequest } from "../dto/request/requisite";
+import { AddRequisiteRequest, DeleteRequisiteRequest, UpdateRequisiteRequest } from "../dto/request/requisite";
 import HttpUtils from "../utils/http";
 import { Request, Response } from "express";
 import { QueryUtils } from "../utils/query";
 import { RedisClientType } from "redis";
 import { redisClient } from "../config/connect";
 import { API_BITRIX } from "../constant/api";
-import { AddRequisiteResult } from "../dto/response/requisite";
+import { AddRequisiteResult, DeleteRequisiteResult, UpdateRequisiteResult } from "../dto/response/requisite";
+import { RequisiteModel } from "../models/requisite";
+import { BitrixInfoRedis } from "../models/redis";
 
 
 
@@ -25,11 +27,35 @@ export class RequisiteController {
         this.addRequisite = this.addRequisite.bind(this);
         this.updateRequisite = this.updateRequisite.bind(this);
         this.deleteRequisite = this.deleteRequisite.bind(this);
-
     }
 
     async listRequisite(req: Request, res: Response) {
         try {
+            const { auth } = req.query as { auth: string };
+
+            const dataAccessKey = await this.clientRedis.get(auth);
+
+            if (!dataAccessKey) {
+                throw new Error("token not exist");
+            }
+            const bitrixData = JSON.parse(dataAccessKey) as BitrixInfoRedis;
+
+
+
+            const resultRequisite = await this.queryUtils.axiosBaseQuery<RequisiteModel[]>({
+                baseUrl: bitrixData.bitrixUrl,
+                data: {
+                    method: "GET",
+                    url: API_BITRIX.CRM.requisite.list,
+                    params: { auth }
+                }
+            });
+
+            if (resultRequisite instanceof Error) {
+                throw resultRequisite;
+            }
+
+            this.httpUtils.SuccessResponse(req, res, resultRequisite);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
@@ -83,7 +109,7 @@ export class RequisiteController {
             }
             const bitrixData = JSON.parse(dataAccessKey) as { bitrixUrl: string };
 
-            const resultRequisite = await this.queryUtils.axiosBaseQuery<AddRequisiteResult>({
+            const resultRequisite = await this.queryUtils.axiosBaseQuery<UpdateRequisiteResult>({
                 baseUrl: bitrixData.bitrixUrl,
                 data: {
                     method: "POST",
@@ -110,7 +136,32 @@ export class RequisiteController {
 
     async deleteRequisite(req: Request, res: Response) {
         try {
+            const { auth } = req.query as { auth: string };
+            const dataDeleteRequisite = req.body as DeleteRequisiteRequest;
 
+            const dataAccessKey = await this.clientRedis.get(auth);
+            if (!dataAccessKey) {
+                throw new Error("token not exist");
+            }
+            const bitrixData = JSON.parse(dataAccessKey) as { bitrixUrl: string };
+
+            const resultRequisite = await this.queryUtils.axiosBaseQuery<DeleteRequisiteResult>({
+                baseUrl: bitrixData.bitrixUrl,
+                data: {
+                    method: "POST",
+                    url: API_BITRIX.CRM.requisite.delete,
+                    data: {
+                        id: dataDeleteRequisite.id,
+                    },
+                    params: { auth }
+                }
+            });
+
+            if (resultRequisite instanceof Error) {
+                throw resultRequisite;
+            }
+
+            this.httpUtils.SuccessResponse(req, res, resultRequisite);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }

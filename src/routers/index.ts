@@ -1,9 +1,9 @@
-import { Router } from "express";
 import authRouter from "./auth";
 import testRouter from "./test";
 import contactRouter from "./contact";
-import { authMiddleware } from "../middlewares/auth";
 import requisiteRouter from "./requisite";
+import { Router } from "express";
+import { authMiddleware } from "../middlewares/auth";
 
 const router = Router();
 
