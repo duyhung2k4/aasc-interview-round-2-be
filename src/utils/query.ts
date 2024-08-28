@@ -3,7 +3,6 @@ import type { AxiosRequestConfig, AxiosResponse } from 'axios'
 
 export class QueryUtils {
     async axiosBaseQuery<T>(payload: PayloadQuery): Promise<T | Error> {
-        console.log(`${payload.baseUrl}${payload.data.url}`)
         try {
             const result = await axios({
                 url: `${payload.baseUrl}${payload.data.url}`,
@@ -13,7 +12,8 @@ export class QueryUtils {
             });
             return result.data;
         } catch (axiosError) {
-            return axiosError as AxiosError;
+            const error = axiosError as AxiosError;
+            return new Error(JSON.stringify(error?.response?.data));
         }
     }
 }

@@ -380,10 +380,10 @@ export class AuthService {
             }
 
             const bitrixTokenResult = await this.queryUtils.axiosBaseQuery<OAuthResponse>({
-                baseUrl: bitrixResult.domain,
+                baseUrl: `${process.env.BITRIX_OAUTH}`,
                 data: {
                     method: "GET",
-                    url: "/oauth/token",
+                    url: "oauth/token",
                     params: {
                         refresh_token: bitrixResult.token.refresh_token,
                         client_secret: bitrixResult.client_secret,
@@ -393,6 +393,7 @@ export class AuthService {
                 }
             });
 
+            
             if(bitrixTokenResult instanceof Error) {
                 throw new Error(JSON.stringify(bitrixTokenResult));
             }

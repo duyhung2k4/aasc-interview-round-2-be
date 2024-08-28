@@ -24,6 +24,7 @@ export class AuthMiddleware {
             }
 
             const accessKey = await this.clientRedis.get(token);
+            console.log(accessKey);
             if(!accessKey) {
                 this.httpUtils.UnAuthorization(res, new Error("token not exist"));
                 return;
