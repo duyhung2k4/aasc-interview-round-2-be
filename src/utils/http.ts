@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Response, Request } from "express";
 
 export default class HttpUtils {
     constructor() { }
@@ -25,12 +25,14 @@ export default class HttpUtils {
         res.status(401).json(dataRes);
     }
 
-    SuccessResponse(res: Response, data: any, newToken?: string) {
+    SuccessResponse(req: Request, res: Response, data: any) {
+        const newToken = req.query.newToken as string;
         const dataRes: ResponsData<any> = {
             data: data,
             message: "OK",
             error: null,
             status: 200,
+            newToken,
         }
 
         res.status(200).json(dataRes);

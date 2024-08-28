@@ -2,14 +2,19 @@ import { RedisClientType } from "redis";
 import HttpUtils from "../utils/http";
 import { Request, Response } from "express";
 import { redisClient } from "../config/connect";
+import { BitrixInfoRedis } from "../models/redis";
+import dayjs from "dayjs";
+import { AuthService } from "../services/auth";
 
 export class AuthMiddleware {
     private httpUtils: HttpUtils;
     private clientRedis: RedisClientType;
+    private authService: AuthService;
 
     constructor() {
-        this.httpUtils = new HttpUtils();
         this.clientRedis = redisClient;
+        this.httpUtils = new HttpUtils();
+        this.authService = new AuthService();
 
         this.authToken = this.authToken.bind(this);
     }
@@ -24,13 +29,25 @@ export class AuthMiddleware {
             }
 
             const accessKey = await this.clientRedis.get(token);
-            console.log(accessKey);
+            
             if(!accessKey) {
                 this.httpUtils.UnAuthorization(res, new Error("token not exist"));
                 return;
             }
 
+            const tokenInfo: BitrixInfoRedis = JSON.parse(accessKey);
+            const isBefore = dayjs() < dayjs(tokenInfo.exp);
+            if(isBefore) {
+                next();
+                return;
+            }
 
+            const newToken = await this.authService.getToken(token);
+            if(newToken instanceof Error) {
+                throw newToken;
+            }
+            req.query.auth = newToken;
+            req.query.newToken = newToken;
 
             next();
         } catch (error) {

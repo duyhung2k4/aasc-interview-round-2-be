@@ -11,6 +11,7 @@ import { COLUMN_TABLE } from "../constant/table";
 import { QueryUtils } from "../utils/query";
 import { OAuthResponse } from "../dto/response/auth";
 import { RedisClientType } from "redis";
+import { BitrixInfoRedis } from "../models/redis";
 
 
 
@@ -418,7 +419,8 @@ export class AuthService {
             await this.clientRedis.del([oldAccessToken]);
             await this.clientRedis.set(bitrixTokenResult.access_token, JSON.stringify({
                 bitrixUrl: bitrixTokenResult.client_endpoint,
-            }));
+                exp: dayjs.unix(bitrixTokenResult.expires).toDate(),
+            } as BitrixInfoRedis));
 
             return bitrixTokenResult.access_token;
         } catch (error) {

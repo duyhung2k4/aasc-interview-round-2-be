@@ -13,6 +13,8 @@ import { AppInfoResponse, LoginResponse, RegisterRepsone } from "../dto/response
 import { Transporter } from "nodemailer";
 import { RedisClientType } from "redis";
 import { redisClient } from "../config/connect";
+import { BitrixInfoRedis } from "../models/redis";
+import dayjs from "dayjs";
 
 
 
@@ -23,7 +25,7 @@ export class AuthController {
     private emitter: EventEmitter;
     private emailTransporter: Transporter<SMTPTransport.SentMessageInfo>;
     private clientRedis: RedisClientType;
-    
+
 
     constructor() {
         this.emitter = emitter;
@@ -61,7 +63,7 @@ export class AuthController {
             const result = await this.authService.installApp(data, appInfoResult.result.CODE);
             this.emitter.emit("save_accept_code", data["auth[access_token]"]);
 
-            this.httpUtils.SuccessResponse(res, result);
+            this.httpUtils.SuccessResponse(req, res, result);
         } catch (error) {
             console.log(error);
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
@@ -73,7 +75,7 @@ export class AuthController {
             const data = req.body as RegisterRequest;
             const result = await this.authService.createAccpetCode(data);
 
-            if(result instanceof Error) {
+            if (result instanceof Error) {
                 throw new Error(JSON.stringify(result));
             }
 
@@ -89,7 +91,7 @@ export class AuthController {
                 html: `<h1>${result.code}</h1>`,
             });
 
-            this.httpUtils.SuccessResponse(res, response);
+            this.httpUtils.SuccessResponse(req, res, response);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
@@ -100,11 +102,11 @@ export class AuthController {
             const data = req.body as AcceptCodeRequest;
             const result = await this.authService.acceptCode(data);
 
-            if(result instanceof Error) {
+            if (result instanceof Error) {
                 throw new Error(JSON.stringify(result));
             }
 
-            this.httpUtils.SuccessResponse(res, result);
+            this.httpUtils.SuccessResponse(req, res, result);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
@@ -115,11 +117,11 @@ export class AuthController {
             const data = req.body as LoginRequest;
             const result = await this.authService.login(data);
 
-            if(result instanceof Error) {
+            if (result instanceof Error) {
                 throw new Error(JSON.stringify(result));
             }
 
-            if(!result.token) {
+            if (!result.token) {
                 throw new Error("token not found");
             }
 
@@ -131,9 +133,10 @@ export class AuthController {
 
             await this.clientRedis.set(access_token, JSON.stringify({
                 bitrixUrl: result.client_endpoint,
-            }))
+                exp: dayjs.unix(Number(result.token.expires)).toDate(),
+            } as BitrixInfoRedis))
 
-            this.httpUtils.SuccessResponse(res, responseData);
+            this.httpUtils.SuccessResponse(req, res, responseData);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
@@ -146,7 +149,7 @@ export class AuthController {
                 query: req.query,
             }
 
-            this.httpUtils.SuccessResponse(res, result);
+            this.httpUtils.SuccessResponse(req, res, result);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }

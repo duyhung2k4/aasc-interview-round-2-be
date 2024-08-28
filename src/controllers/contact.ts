@@ -13,12 +13,10 @@ export class ContactController {
     private httpUtils: HttpUtils;
     private queryUtils: QueryUtils;
     private clientRedis: RedisClientType;
-    private authService: AuthService;
 
     constructor() {
         this.httpUtils = new HttpUtils();
         this.queryUtils = new QueryUtils();
-        this.authService = new AuthService();
         this.clientRedis = redisClient;
 
         this.test = this.test.bind(this);
@@ -32,7 +30,7 @@ export class ContactController {
 
     async test(req: Request, res: Response) {
         try {
-            this.httpUtils.SuccessResponse(res, { mess: "done" });
+            this.httpUtils.SuccessResponse(req, res, { mess: "done" });
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
@@ -61,29 +59,14 @@ export class ContactController {
                 }
             });
 
-            
-            if (result instanceof Error && JSON.parse(result.message)?.error !== "expired_token") {
-                throw new Error(JSON.stringify(result));
+
+
+            if (req.query.newToken) {
+                this.httpUtils.SuccessResponse(req, res, result);
+                return;
             }
 
-            const newToken = await this.authService.getToken(auth);
-            if(newToken instanceof Error) {
-                throw new Error(JSON.stringify(newToken));
-            };
-
-            const resultRepeat = await this.queryUtils.axiosBaseQuery<AddContactResult>({
-                baseUrl: bitrixData.bitrixUrl,
-                data: {
-                    url: API_BITRIX.CRM.contact.add,
-                    method: "POST",
-                    data,
-                    params: {
-                        auth: newToken,
-                    }
-                }
-            });
-
-            this.httpUtils.SuccessResponse(res, resultRepeat, newToken);
+            this.httpUtils.SuccessResponse(req, res, result);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, error as Error);
         }
@@ -92,7 +75,7 @@ export class ContactController {
     async listContact(req: Request, res: Response) {
         try {
             const { auth } = req.query as { auth: string };
-            if(!auth) {
+            if (!auth) {
                 throw new Error("auth not found");
             }
 
@@ -113,11 +96,11 @@ export class ContactController {
                 }
             });
 
-            if(resultList instanceof Error) {
+            if (resultList instanceof Error) {
                 throw resultList;
             }
 
-            this.httpUtils.SuccessResponse(res, resultList);
+            this.httpUtils.SuccessResponse(req, res, resultList);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, error as Error);
         }
@@ -128,10 +111,10 @@ export class ContactController {
             const { auth } = req.query as { auth: string };
             const dataUpdate = req.body as UpdateContactRequest;
 
-            if(!auth) {
+            if (!auth) {
                 throw new Error("auth not found");
             }
-            if(!dataUpdate.id || !dataUpdate.fields) {
+            if (!dataUpdate.id || !dataUpdate.fields) {
                 throw new Error("id and fields must require");
             }
 
@@ -153,11 +136,11 @@ export class ContactController {
                 }
             });
 
-            if(resultUpdate instanceof Error) {
+            if (resultUpdate instanceof Error) {
                 throw resultUpdate;
             }
 
-            this.httpUtils.SuccessResponse(res, resultUpdate);
+            this.httpUtils.SuccessResponse(req, res, resultUpdate);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, error as Error);
         }
@@ -168,10 +151,10 @@ export class ContactController {
             const { auth } = req.query as { auth: string };
             const { id } = req.body as { id: string };
 
-            if(!auth) {
+            if (!auth) {
                 throw new Error("auth not found");
             }
-            if(!id) {
+            if (!id) {
                 throw new Error("id must require");
             }
 
@@ -181,7 +164,7 @@ export class ContactController {
             }
             const bitrixData = JSON.parse(dataAccessKey) as { bitrixUrl: string };
 
-            
+
 
             const resultDelete = await this.queryUtils.axiosBaseQuery<ContactModel[]>({
                 baseUrl: bitrixData.bitrixUrl,
@@ -193,11 +176,11 @@ export class ContactController {
                 }
             });
 
-            if(resultDelete instanceof Error) {
+            if (resultDelete instanceof Error) {
                 throw resultDelete;
             }
 
-            this.httpUtils.SuccessResponse(res, resultDelete);
+            this.httpUtils.SuccessResponse(req, res, resultDelete);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, error as Error);
         }
