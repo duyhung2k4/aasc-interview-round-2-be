@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import bodyParser from "body-parser";
 import morgan from "morgan";
 import path from "path";
@@ -13,13 +14,14 @@ const app = express();
 const PORT = Number(process.env.APP_PORT);
 const HOST = `${process.env.APP_HOST}`;
 
+app.use(cors());
 app.use(express.static(path.join(__dirname, '../')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(morgan('combined'))
 
 
-app.use(router);
+app.use("/api",router);
 
 app.listen(PORT, HOST,async () => {
     try {

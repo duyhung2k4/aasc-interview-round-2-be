@@ -118,7 +118,7 @@ export class AuthController {
             const result = await this.authService.login(data);
 
             if (result instanceof Error) {
-                throw new Error(JSON.stringify(result));
+                throw result;
             }
 
             if (!result.token) {
@@ -148,8 +148,6 @@ export class AuthController {
                 body: req.body,
                 query: req.query,
             };
-
-            console.log(result);
 
             this.httpUtils.SuccessResponse(req, res, result);
         } catch (error) {

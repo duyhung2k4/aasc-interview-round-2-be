@@ -57,6 +57,8 @@ export class AuthService {
                 values: [...conditions.map(c => c.value)],
             }
 
+            
+
             const result = await this.pgClient.query<Record<string, any>>(queryBitrix);
             if (!result.rowCount) {
                 throw new Error("bitrixs not found");
@@ -347,6 +349,7 @@ export class AuthService {
             const bitrixRes = await this._getBitrix([
                 { field: "b.client_id", value: payload.client_id },
             ]);
+
             if (bitrixRes instanceof Error) {
                 throw new Error(JSON.stringify(bitrixRes));
             }
