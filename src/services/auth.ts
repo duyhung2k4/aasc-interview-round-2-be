@@ -398,8 +398,9 @@ export class AuthService {
             });
 
             
+            
             if(bitrixTokenResult instanceof Error) {
-                throw new Error(JSON.stringify(bitrixTokenResult));
+                throw bitrixTokenResult;
             }
 
             const queryUpdateToken: QueryConfig = {

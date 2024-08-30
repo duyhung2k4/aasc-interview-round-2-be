@@ -49,6 +49,7 @@ export class AuthMiddleware {
             req.query.auth = newToken;
             req.query.newToken = newToken;
 
+
             next();
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));

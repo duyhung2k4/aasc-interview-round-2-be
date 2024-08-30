@@ -1,13 +1,15 @@
-import { Request, Response } from "express";
 import HttpUtils from "../utils/http";
+
+import { Request, Response } from "express";
 import { AddContactRequest, UpdateContactRequest } from "../dto/request/contact";
 import { QueryUtils } from "../utils/query";
 import { API_BITRIX } from "../constant/api";
-import { AddContactResult } from "../dto/response/contact";
+import { AddContactResult, ListContactResult } from "../dto/response/contact";
 import { RedisClientType } from "redis";
 import { redisClient } from "../config/connect";
-import { AuthService } from "../services/auth";
 import { ContactModel } from "../models/contact";
+
+
 
 export class ContactController {
     private httpUtils: HttpUtils;
@@ -52,7 +54,9 @@ export class ContactController {
                 data: {
                     url: API_BITRIX.CRM.contact.add,
                     method: "POST",
-                    data,
+                    data: {
+                        fields: data,
+                    },
                     params: {
                         auth,
                     }
@@ -85,7 +89,7 @@ export class ContactController {
             }
             const bitrixData = JSON.parse(dataAccessKey) as { bitrixUrl: string };
 
-            const resultList = await this.queryUtils.axiosBaseQuery<ContactModel[]>({
+            const resultList = await this.queryUtils.axiosBaseQuery<ListContactResult>({
                 baseUrl: bitrixData.bitrixUrl,
                 data: {
                     method: "GET",
@@ -100,7 +104,7 @@ export class ContactController {
                 throw resultList;
             }
 
-            this.httpUtils.SuccessResponse(req, res, resultList);
+            this.httpUtils.SuccessResponse(req, res, resultList.result);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, error as Error);
         }

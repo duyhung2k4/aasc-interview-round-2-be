@@ -9,7 +9,9 @@ export class QueryUtils {
                 method: payload.data.method,
                 data: payload.data.data,
                 params: payload.data.params,
+                timeout: 10000,
             });
+
             return result.data;
         } catch (axiosError) {
             const error = axiosError as AxiosError;
