@@ -1,17 +1,17 @@
 import HttpUtils from "../utils/http";
 
-import { AddRequisiteRequest, DeleteRequisiteRequest, UpdateRequisiteRequest } from "../dto/request/requisite";
 import { Request, Response } from "express";
 import { QueryUtils } from "../utils/query";
 import { RedisClientType } from "redis";
 import { redisClient } from "../config/connect";
-import { API_BITRIX } from "../constant/api";
-import { AddRequisiteResult, DeleteRequisiteResult, ListRequisiteResult, UpdateRequisiteResult } from "../dto/response/requisite";
 import { BitrixInfoRedis } from "../models/redis";
+import { API_BITRIX } from "../constant/api";
+import { AddBankResult, DeleteBankResult, ListBankResult, UpdateBankResult } from "../dto/response/bank";
+import { AddBankRequest, DeleteBankRequest, UpdateBankRequest } from "../dto/request/bank";
 
 
 
-export class RequisiteController {
+export class BankController {
     private httpUtils: HttpUtils;
     private queryUtils: QueryUtils;
     private clientRedis: RedisClientType;
@@ -21,15 +21,15 @@ export class RequisiteController {
         this.httpUtils = new HttpUtils();
         this.queryUtils = new QueryUtils();
 
-
-
-        this.listRequisite = this.listRequisite.bind(this);
-        this.addRequisite = this.addRequisite.bind(this);
-        this.updateRequisite = this.updateRequisite.bind(this);
-        this.deleteRequisite = this.deleteRequisite.bind(this);
+        this.listBank = this.listBank.bind(this);
+        this.addBank = this.addBank.bind(this);
+        this.updateBank = this.updateBank.bind(this);
+        this.deleteBank = this.deleteBank.bind(this);
     }
 
-    async listRequisite(req: Request, res: Response) {
+
+
+    async listBank(req: Request, res: Response) {
         try {
             const { auth } = req.query as { auth: string };
 
@@ -42,29 +42,29 @@ export class RequisiteController {
 
 
 
-            const resultRequisite = await this.queryUtils.axiosBaseQuery<ListRequisiteResult>({
+            const result = await this.queryUtils.axiosBaseQuery<ListBankResult>({
                 baseUrl: bitrixData.bitrixUrl,
                 data: {
                     method: "GET",
-                    url: API_BITRIX.CRM.requisite.list,
+                    url: API_BITRIX.CRM.bank.list,
                     params: { auth }
                 }
             });
 
-            if (resultRequisite instanceof Error) {
-                throw resultRequisite;
+            if (result instanceof Error) {
+                throw result;
             }
 
-            this.httpUtils.SuccessResponse(req, res, resultRequisite.result);
+            this.httpUtils.SuccessResponse(req, res, result.result);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
     }
 
-    async addRequisite(req: Request, res: Response) {
+    async addBank(req: Request, res: Response) {
         try {
             const { auth } = req.query as { auth: string };
-            const dataAddRequisite = req.body as AddRequisiteRequest;
+            const dataAdd = req.body as AddBankRequest;
 
             const dataAccessKey = await this.clientRedis.get(auth);
             if (!dataAccessKey) {
@@ -72,36 +72,36 @@ export class RequisiteController {
             }
             const bitrixData = JSON.parse(dataAccessKey) as { bitrixUrl: string };
 
-            const resultRequisite = await this.queryUtils.axiosBaseQuery<AddRequisiteResult>({
+            const result = await this.queryUtils.axiosBaseQuery<AddBankResult>({
                 baseUrl: bitrixData.bitrixUrl,
                 data: {
                     method: "POST",
-                    url: API_BITRIX.CRM.requisite.add,
+                    url: API_BITRIX.CRM.bank.add,
                     data: {
                         fields: {
-                            ...dataAddRequisite,
-                            "ENTITY_TYPE_ID": 3,
-                            "PRESET_ID": 1,
+                            ...dataAdd,
+                            "ENTITY_TYPE_ID": 8,
+                            "ACTIVE": "Y",
                         }
                     },
                     params: { auth }
                 }
             });
 
-            if (resultRequisite instanceof Error) {
-                throw resultRequisite;
+            if (result instanceof Error) {
+                throw result;
             }
 
-            this.httpUtils.SuccessResponse(req, res, resultRequisite);
+            this.httpUtils.SuccessResponse(req, res, result);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
     }
 
-    async updateRequisite(req: Request, res: Response) {
+    async updateBank(req: Request, res: Response) {
         try {
             const { auth } = req.query as { auth: string };
-            const dataUpdateRequisite = req.body as UpdateRequisiteRequest;
+            const dataUpdate = req.body as UpdateBankRequest;
 
             const dataAccessKey = await this.clientRedis.get(auth);
             if (!dataAccessKey) {
@@ -109,42 +109,36 @@ export class RequisiteController {
             }
             const bitrixData = JSON.parse(dataAccessKey) as { bitrixUrl: string };
 
-            console.log({
-                id: dataUpdateRequisite.id,
-                fields: {
-                    ...dataUpdateRequisite.fields,
-                }
-            });
-
-            const resultRequisite = await this.queryUtils.axiosBaseQuery<UpdateRequisiteResult>({
+            const result = await this.queryUtils.axiosBaseQuery<UpdateBankResult>({
                 baseUrl: bitrixData.bitrixUrl,
                 data: {
                     method: "POST",
-                    url: API_BITRIX.CRM.requisite.update,
+                    url: API_BITRIX.CRM.bank.update,
                     data: {
-                        id: dataUpdateRequisite.id,
+                        id: dataUpdate.id,
                         fields: {
-                            ...dataUpdateRequisite.fields,
+                            ...dataUpdate.fields,
+                            "ENTITY_TYPE_ID": 8,
                         }
                     },
                     params: { auth }
                 }
             });
 
-            if (resultRequisite instanceof Error) {
-                throw resultRequisite;
+            if (result instanceof Error) {
+                throw result;
             }
 
-            this.httpUtils.SuccessResponse(req, res, resultRequisite);
+            this.httpUtils.SuccessResponse(req, res, result);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
     }
 
-    async deleteRequisite(req: Request, res: Response) {
+    async deleteBank(req: Request, res: Response) {
         try {
             const { auth } = req.query as { auth: string };
-            const dataDeleteRequisite = req.body as DeleteRequisiteRequest;
+            const dataDelete = req.body as DeleteBankRequest;
 
             const dataAccessKey = await this.clientRedis.get(auth);
             if (!dataAccessKey) {
@@ -152,27 +146,28 @@ export class RequisiteController {
             }
             const bitrixData = JSON.parse(dataAccessKey) as { bitrixUrl: string };
 
-            const resultRequisite = await this.queryUtils.axiosBaseQuery<DeleteRequisiteResult>({
+
+            const result = await this.queryUtils.axiosBaseQuery<DeleteBankResult>({
                 baseUrl: bitrixData.bitrixUrl,
                 data: {
                     method: "POST",
-                    url: API_BITRIX.CRM.requisite.delete,
+                    url: API_BITRIX.CRM.bank.delete,
                     data: {
-                        id: dataDeleteRequisite.id,
+                        id: dataDelete.id,
                     },
                     params: { auth }
                 }
             });
 
-            if (resultRequisite instanceof Error) {
-                throw resultRequisite;
+            if (result instanceof Error) {
+                throw result;
             }
 
-            this.httpUtils.SuccessResponse(req, res, resultRequisite);
+            this.httpUtils.SuccessResponse(req, res, result);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }
     }
 }
 
-export const requisiteController = new RequisiteController();
+export const bankController = new BankController();

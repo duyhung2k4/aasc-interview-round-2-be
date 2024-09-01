@@ -1,24 +1,23 @@
 import { BankModel } from "../../models/bank"
-import { RequisiteModel } from "../../models/requisite"
 import { TimeModel } from "../../models/time"
 
-export type  AddRequisiteResult = {
+export type  AddBankResult = {
     result: number
     time: TimeModel
 }
 
-export type  UpdateRequisiteResult = {
+export type  UpdateBankResult = {
     result: boolean
     time: TimeModel
 }
 
-export type  DeleteRequisiteResult = {
+export type  DeleteBankResult = {
     result: boolean
     time: TimeModel
 }
 
-export type ListRequisiteResult = {
-    result: RequisiteModel[]
+export type ListBankResult = {
+    result: BankModel[]
     time: TimeModel
     total: number
 }

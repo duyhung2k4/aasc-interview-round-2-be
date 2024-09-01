@@ -8,6 +8,7 @@ import { AddContactResult, ListContactResult } from "../dto/response/contact";
 import { RedisClientType } from "redis";
 import { redisClient } from "../config/connect";
 import { ContactModel } from "../models/contact";
+import { ListBankResult } from "../dto/response/bank";
 
 
 
@@ -55,7 +56,10 @@ export class ContactController {
                     url: API_BITRIX.CRM.contact.add,
                     method: "POST",
                     data: {
-                        fields: data,
+                        fields: {
+                            ...data,
+                            "OPENED": "Y",
+                        },
                     },
                     params: {
                         auth,
@@ -153,7 +157,7 @@ export class ContactController {
     async deleteContact(req: Request, res: Response) {
         try {
             const { auth } = req.query as { auth: string };
-            const { id } = req.body as { id: string };
+            const { id, requisiteId } = req.body as { id: string, requisiteId: string };
 
             if (!auth) {
                 throw new Error("auth not found");
@@ -168,6 +172,27 @@ export class ContactController {
             }
             const bitrixData = JSON.parse(dataAccessKey) as { bitrixUrl: string };
 
+
+            const resultBank = await this.queryUtils.axiosBaseQuery<ListBankResult>({
+                baseUrl: bitrixData.bitrixUrl,
+                data: {
+                    method: "GET",
+                    url: API_BITRIX.CRM.bank.list,
+                    params: { 
+                        auth,
+                        filter: { "ENTITY_ID": requisiteId}
+                    },
+                }
+            });
+
+            if(resultBank instanceof Error) {
+                throw resultBank;
+            }
+
+            if(resultBank.result.length > 0) {
+                throw new Error("need delete all bank of contact");
+            }
+            
 
 
             const resultDelete = await this.queryUtils.axiosBaseQuery<ContactModel[]>({

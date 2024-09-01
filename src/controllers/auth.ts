@@ -45,6 +45,7 @@ export class AuthController {
     async eventInstallApp(req: Request, res: Response) {
         try {
             const data = req.body as BitrixInstallRequest;
+            console.log(data);
             const appInfoResult = await this.queryUtils.axiosBaseQuery<{ result: AppInfoResponse, time: TimeModel }>({
                 baseUrl: data["auth[client_endpoint]"],
                 data: {
