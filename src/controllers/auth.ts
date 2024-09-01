@@ -74,7 +74,7 @@ export class AuthController {
     async register(req: Request, res: Response) {
         try {
             const data = req.body as RegisterRequest;
-            const result = await this.authService.createAccpetCode(data);
+            const result = await this.authService.createAcceptCode(data);
 
             if (result instanceof Error) {
                 throw new Error(JSON.stringify(result));

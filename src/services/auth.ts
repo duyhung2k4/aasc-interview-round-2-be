@@ -32,10 +32,11 @@ export class AuthService {
         this._getBitrix = this._getBitrix.bind(this);
 
         this.installApp = this.installApp.bind(this);
-        this.createAccpetCode = this.createAccpetCode.bind(this);
+        this.createAcceptCode = this.createAcceptCode.bind(this);
         this.login = this.login.bind(this);
         this.getToken = this.getToken.bind(this);
     }
+
 
 
     private async _getBitrix(conditions: { field: string, value: any }[]): Promise<BitrixModel | Error> {
@@ -227,7 +228,8 @@ export class AuthService {
     }
 
 
-    async createAccpetCode(payload: RegisterRequest): Promise<AcceptCodeModel | Error> {
+
+    async createAcceptCode(payload: RegisterRequest): Promise<AcceptCodeModel | Error> {
         try {
             const queryBitrix: QueryConfig = {
                 text: `SELECT * FROM bitrixs WHERE client_id = $1 AND client_secret IS NULL`,
@@ -287,6 +289,8 @@ export class AuthService {
         }
     }
 
+
+
     async acceptCode(payload: AcceptCodeRequest): Promise<boolean | Error> {
         try {
             const queryAcceptCode: QueryConfig = {
@@ -343,6 +347,8 @@ export class AuthService {
         }
     }
 
+
+
     async login(payload: LoginRequest): Promise<BitrixModel | Error> {
         try {
 
@@ -368,6 +374,8 @@ export class AuthService {
             return new Error(JSON.stringify(error));
         }
     }
+
+    
 
     async getToken(oldAccessToken: string): Promise<string | Error> {
         try {
