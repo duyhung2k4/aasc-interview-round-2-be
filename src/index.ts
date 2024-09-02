@@ -14,16 +14,19 @@ const app = express();
 const PORT = Number(process.env.APP_PORT);
 const HOST = `${process.env.APP_HOST}`;
 
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+}));
 app.use(express.static(path.join(__dirname, '../')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(morgan('combined'))
 
 
-app.use("/api",router);
+app.use("/api", router);
 
-app.listen(PORT, HOST,async () => {
+app.listen(PORT, HOST, async () => {
     try {
         setUpEmitter();
         await init();
