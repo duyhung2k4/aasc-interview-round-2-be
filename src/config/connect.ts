@@ -23,7 +23,7 @@ export const pgConnect = async () => {
 
 
 export const redisClient: RedisClientType = createClient({
-    url: "redis://localhost:6379"
+    url: process.env.REDIS_URL
 });
 export const redisConnect = async () => {
     try {

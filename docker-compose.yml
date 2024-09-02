@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "10000:10000"
+    environment:
+      - DATABASE_URL=postgres://postgres:123456@104.198.194.78:5432/aasc_interview_round_2
+      - REDIS_URL=redis://104.198.194.78:6379
+    volumes:
+      - .:/app
+    command: ["node", "dist/index.js"]
