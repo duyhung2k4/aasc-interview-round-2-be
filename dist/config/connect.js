@@ -27,7 +27,7 @@ const pgConnect = async () => {
 };
 exports.pgConnect = pgConnect;
 exports.redisClient = (0, redis_1.createClient)({
-    url: "redis://localhost:6379"
+    url: process.env.REDIS_URL
 });
 const redisConnect = async () => {
     try {
