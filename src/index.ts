@@ -4,8 +4,10 @@ import bodyParser from "body-parser";
 import morgan from "morgan";
 import path from "path";
 import dotenv from "dotenv";
+import https from "https";
 import router from "./routers";
 import init from "./config/init";
+import fs from "fs";
 import { setUpEmitter } from "./config/emit";
 
 dotenv.config();
@@ -26,11 +28,18 @@ app.use(morgan('combined'))
 
 app.use("/api", router);
 
-app.listen(PORT, HOST, async () => {
+console.log(__dirname);
+
+const sslOptions = {
+    key: fs.readFileSync(path.resolve(__dirname, 'keys/server.key')),
+    cert: fs.readFileSync(path.resolve(__dirname, 'keys/server.crt')),
+};
+
+https.createServer(sslOptions, app).listen(PORT, HOST, async () => {
     try {
         setUpEmitter();
         await init();
-        console.log(`Server is listening on http://${HOST}:${PORT}`);
+        console.log(`Server is listening on https://${HOST}:${PORT}`);
     } catch (error) {
         console.log(error);
     }
