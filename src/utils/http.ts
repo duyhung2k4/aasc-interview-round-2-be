@@ -27,12 +27,14 @@ export default class HttpUtils {
 
     SuccessResponse(req: Request, res: Response, data: any) {
         const newToken = req.query.newToken as string;
+        const urlGetToken = req.query.urlGetToken as string;
         const dataRes: ResponsData<any> = {
             data: data,
             message: "OK",
             error: null,
             status: 200,
             newToken,
+            urlGetToken,
         }
 
         res.status(200).json(dataRes);
@@ -45,4 +47,5 @@ export type ResponsData<T> = {
     error: Error | null
     status: number
     newToken?: string
+    urlGetToken?: string
 }

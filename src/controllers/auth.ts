@@ -10,7 +10,7 @@ import { AuthService } from "../services/auth";
 import { Request, Response } from "express";
 import { QueryUtils } from "../utils/query";
 import { TimeModel } from "../models/time";
-import { AppInfoResponse, LoginResponse, RegisterRepsone } from "../dto/response/auth";
+import { AppInfoResponse, LoginResponse, RegisterRepsone, UpdateTokenResponse } from "../dto/response/auth";
 import { Transporter } from "nodemailer";
 import { RedisClientType } from "redis";
 import { redisClient } from "../config/connect";
@@ -40,6 +40,7 @@ export class AuthController {
         this.register = this.register.bind(this);
         this.acceptCode = this.acceptCode.bind(this);
         this.login = this.login.bind(this);
+        this.updateToken = this.updateToken.bind(this);
     }
 
     async eventInstallApp(req: Request, res: Response) {
@@ -151,6 +152,30 @@ export class AuthController {
             };
 
             this.httpUtils.SuccessResponse(req, res, result);
+        } catch (error) {
+            this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
+        }
+    }
+
+    async updateToken(req: Request, res: Response) {
+        try {
+            const { code } = req.body as { code: string };
+            const oldToken = (req.query?.auth as string) || null;
+
+            if(!oldToken) {
+                throw new Error("not found token");
+            }
+
+            const result = await this.authService.updateToken(code, oldToken);
+            if(result instanceof Error) {
+                throw result;
+            }
+
+            const response: UpdateTokenResponse = {
+                access_token: result
+            }
+
+            this.httpUtils.SuccessResponse(req, res, response);
         } catch (error) {
             this.httpUtils.ErrorResponse(res, new Error(JSON.stringify(error)));
         }

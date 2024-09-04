@@ -36,3 +36,7 @@ export type OAuthResponse = {
     user_id: number;
     refresh_token: string;
 }
+
+export type UpdateTokenResponse = {
+    access_token: string;
+}

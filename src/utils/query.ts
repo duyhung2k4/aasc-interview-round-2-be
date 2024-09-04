@@ -14,6 +14,7 @@ export class QueryUtils {
 
             return result.data;
         } catch (axiosError) {
+            console.log(axiosError);
             const error = axiosError as AxiosError;
             return new Error(JSON.stringify(error?.response?.data));
         }

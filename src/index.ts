@@ -43,11 +43,10 @@ const startServer = async () => {
         });
     } catch (error) {
         console.error('Lỗi khi khởi tạo máy chủ:', error);
-        process.exit(1); // Thoát để pm2 khởi động lại
+        process.exit(1);
     }
 };
 
-// Xử lý kết nối PostgreSQL
 const checkPostgresConnection = async () => {
     const client = new Client({
         connectionString: process.env.DATABASE_URL,
@@ -58,7 +57,7 @@ const checkPostgresConnection = async () => {
         console.log('PostgreSQL connected successfully!');
     } catch (error) {
         console.error('Lỗi kết nối PostgreSQL:', error);
-        process.exit(1); // Thoát để pm2 khởi động lại
+        process.exit(1);
     } finally {
         await client.end();
     }
@@ -66,13 +65,24 @@ const checkPostgresConnection = async () => {
 
 process.on('uncaughtException', (err) => {
     console.error('Ngoại lệ không được bắt:', err);
-    process.exit(1); // Thoát để pm2 khởi động lại
+    process.exit(1);
 });
 
 process.on('unhandledRejection', (err) => {
     console.error('Từ chối không được xử lý:', err);
-    process.exit(1); // Thoát để pm2 khởi động lại
+    process.exit(1);
 });
 
-// Kiểm tra kết nối PostgreSQL trước khi khởi động máy chủ
 checkPostgresConnection().then(startServer);
+
+// app.listen(PORT, HOST, async () => {
+//     try {
+//         await init();
+//         setUpEmitter();
+//         console.log(`Server is listening on http://${HOST}:${PORT}`);
+//     } catch (error) {
+//         console.log(error);
+//     }
+// })
+
+export default app;

@@ -28,13 +28,15 @@ export class AuthService {
         this.clientRedis = redisClient;
 
 
-        
+
         this._getBitrix = this._getBitrix.bind(this);
 
         this.installApp = this.installApp.bind(this);
         this.createAcceptCode = this.createAcceptCode.bind(this);
         this.login = this.login.bind(this);
         this.getToken = this.getToken.bind(this);
+        this.getRefreshToken = this.getRefreshToken.bind(this);
+        this.updateToken = this.updateToken.bind(this);
     }
 
 
@@ -58,7 +60,7 @@ export class AuthService {
                 values: [...conditions.map(c => c.value)],
             }
 
-            
+
 
             const result = await this.pgClient.query<Record<string, any>>(queryBitrix);
             if (!result.rowCount) {
@@ -375,7 +377,7 @@ export class AuthService {
         }
     }
 
-    
+
 
     async getToken(oldAccessToken: string): Promise<string | Error> {
         try {
@@ -405,9 +407,9 @@ export class AuthService {
                 }
             });
 
-            
-            
-            if(bitrixTokenResult instanceof Error) {
+
+
+            if (bitrixTokenResult instanceof Error) {
                 throw bitrixTokenResult;
             }
 
@@ -435,6 +437,140 @@ export class AuthService {
             await this.clientRedis.del([oldAccessToken]);
 
             return bitrixTokenResult.access_token;
+        } catch (error) {
+            return error as Error;
+        }
+    }
+
+
+    async getRefreshToken(token: string): Promise<string | Error> {
+        try {
+            const queryBitrix: QueryConfig = {
+                text: `
+                    SELECT
+                        b.id as id,
+                        b.member_id as member_id,
+                        b.application_token as application_token,
+                        b.client_id as client_id,
+                        b.client_secret as client_secret,
+                        b.email as email,
+                        b.password as password,
+                        b.domain as domain,
+                        b.server_endpoint as server_endpoint,
+                        b.client_endpoint as client_endpoint,
+                        b.active as active,
+                        b.created_at as created_at,
+                        b.updated_at as updated_at,
+                        b.deleted_at as deleted_at
+                    FROM 
+                    bitrixs as b
+                    JOIN tokens AS t ON t.bitrix_id = b.id
+                    WHERE t.access_token = $1
+                `,
+                values: [token],
+            }
+
+            const result = await this.pgClient.query<BitrixModel>(queryBitrix);
+
+            if (result.rowCount === 0) {
+                throw new Error("not found bitrix");
+            }
+
+            const bitrix = result.rows[0];
+            const urlQuery = `${bitrix.domain}/oauth/authorize/?client_id=${bitrix.client_id}&response_type=code&redirect_uri=${process.env.REDIRECT_URL}`;
+
+            return urlQuery;
+        } catch (error) {
+            return error as Error;
+        }
+    }
+
+    async updateToken(code: string, oldToken: string): Promise<string | Error> {
+        try {
+            const queryBitrix: QueryConfig = {
+                text: `
+                    SELECT
+                        b.id as id,
+                        b.member_id as member_id,
+                        b.application_token as application_token,
+                        b.client_id as client_id,
+                        b.client_secret as client_secret,
+                        b.email as email,
+                        b.password as password,
+                        b.domain as domain,
+                        b.server_endpoint as server_endpoint,
+                        b.client_endpoint as client_endpoint,
+                        b.active as active,
+                        b.created_at as created_at,
+                        b.updated_at as updated_at,
+                        b.deleted_at as deleted_at
+                    FROM 
+                    bitrixs as b
+                    JOIN tokens AS t ON t.bitrix_id = b.id
+                    WHERE t.access_token = $1
+                `,
+                values: [oldToken],
+            }
+            const resultBitrix = await this.pgClient.query<BitrixModel>(queryBitrix);
+            if (resultBitrix.rowCount === 0) {
+                throw new Error("not found bitrix");
+            }
+
+
+            const bitrix = resultBitrix.rows[0];
+            const getNewToken = await this.queryUtils.axiosBaseQuery<OAuthResponse>({
+                baseUrl: `https://${bitrix.domain}`,
+                data: {
+                    method: "GET",
+                    url: "/oauth/token",
+                    params: {
+                        client_id: bitrix.client_id,
+                        grant_type: "authorization_code",
+                        client_secret: bitrix.client_secret,
+                        code: code,
+                        scope: "required_permission"
+                    }
+                }
+            });
+
+            if (getNewToken instanceof Error) {
+                throw getNewToken;
+            }
+
+            const queryUpdateToken: QueryConfig = {
+                text: `
+                    UPDATE tokens
+                    SET
+                        expires = $1,
+                        expires_in = $2,
+                        access_token = $3,
+                        refresh_token = $4
+                    WHERE
+                        access_token = $5
+                    RETURNING *
+                `,
+                values: [
+                    getNewToken.expires,
+                    getNewToken.expires_in,
+                    getNewToken.access_token,
+                    getNewToken.refresh_token,
+                    oldToken,
+                ]
+            }
+
+            const resultUpdateToken = await this.pgClient.query<TokenModel>(queryUpdateToken);
+
+            if (resultUpdateToken instanceof Error) {
+                throw resultUpdateToken;
+            }
+
+            await this.clientRedis.set(getNewToken.access_token, JSON.stringify({
+                bitrixUrl: getNewToken.client_endpoint,
+                exp: dayjs.unix(getNewToken.expires).toDate(),
+            } as BitrixInfoRedis));
+            await this.clientRedis.del([oldToken]);
+
+            return getNewToken.access_token;
         } catch (error) {
             return error as Error;
         }

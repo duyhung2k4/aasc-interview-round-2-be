@@ -35,17 +35,38 @@ export class AuthMiddleware {
                 return;
             }
 
+            
             const tokenInfo: BitrixInfoRedis = JSON.parse(accessKey);
             const isBefore = dayjs() < dayjs(tokenInfo.exp);
+
+
+            // const urlGetToken = await this.authService.getRefreshToken(token);
+            // if (urlGetToken instanceof Error) {
+            //     throw urlGetToken;
+            // }
+            // req.query.urlGetToken = urlGetToken;
+
+            
             if(isBefore) {
                 next();
                 return;
             }
-
+            
             const newToken = await this.authService.getToken(token);
             if(newToken instanceof Error) {
-                throw newToken;
+                const urlGetToken = await this.authService.getRefreshToken(token);
+                if(urlGetToken instanceof Error) {
+                    throw urlGetToken;
+                }
+                req.query.urlGetToken = urlGetToken;
+                
+                this.httpUtils.SuccessResponse(req, res, {});
+                return;
             }
+
+
+
+
             req.query.auth = newToken;
             req.query.newToken = newToken;
 
