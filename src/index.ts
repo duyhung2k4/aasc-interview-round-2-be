@@ -9,6 +9,7 @@ import router from "./routers";
 import init from "./config/init";
 import fs from "fs";
 import { setUpEmitter } from "./config/emit";
+import { Client } from 'pg';
 
 dotenv.config();
 
@@ -33,35 +34,45 @@ const sslOptions = {
     cert: fs.readFileSync(path.resolve(__dirname, 'keys/server.crt')),
 };
 
-const startServer = () => {
-    const server = https.createServer(sslOptions, app);
-
-    server.listen(PORT, HOST, async () => {
-        try {
-            setUpEmitter();
-            await init();
+const startServer = async () => {
+    try {
+        await init();
+        setUpEmitter();
+        https.createServer(sslOptions, app).listen(PORT, HOST, () => {
             console.log(`Server is listening on https://${HOST}:${PORT}`);
-        } catch (error) {
-            console.error('Lỗi khi khởi tạo máy chủ:', error);
-            server.close(() => process.exit(1)); // Đóng máy chủ và thoát
-        }
-    });
-
-    server.on('error', (err: NodeJS.ErrnoException) => {
-        console.error('Lỗi máy chủ:', err);
-    });
+        });
+    } catch (error) {
+        console.error('Lỗi khi khởi tạo máy chủ:', error);
+        process.exit(1); // Thoát để pm2 khởi động lại
+    }
 };
 
-startServer();
+// Xử lý kết nối PostgreSQL
+const checkPostgresConnection = async () => {
+    const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+    });
 
-process.on('uncaughtException', (err: Error) => {
+    try {
+        await client.connect();
+        console.log('PostgreSQL connected successfully!');
+    } catch (error) {
+        console.error('Lỗi kết nối PostgreSQL:', error);
+        process.exit(1); // Thoát để pm2 khởi động lại
+    } finally {
+        await client.end();
+    }
+};
+
+process.on('uncaughtException', (err) => {
     console.error('Ngoại lệ không được bắt:', err);
-    process.exit(1); // Thoát để `pm2` khởi động lại
+    process.exit(1); // Thoát để pm2 khởi động lại
 });
 
-process.on('unhandledRejection', (err: any) => {
+process.on('unhandledRejection', (err) => {
     console.error('Từ chối không được xử lý:', err);
-    process.exit(1); // Thoát để `pm2` khởi động lại
+    process.exit(1); // Thoát để pm2 khởi động lại
 });
 
-export default app;
+// Kiểm tra kết nối PostgreSQL trước khi khởi động máy chủ
+checkPostgresConnection().then(startServer);
