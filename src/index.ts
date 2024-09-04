@@ -42,32 +42,26 @@ const startServer = () => {
             await init();
             console.log(`Server is listening on https://${HOST}:${PORT}`);
         } catch (error) {
-            console.log('Lỗi khi khởi tạo máy chủ:', error);
+            console.error('Lỗi khi khởi tạo máy chủ:', error);
             server.close(() => process.exit(1)); // Đóng máy chủ và thoát
         }
     });
 
     server.on('error', (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EADDRINUSE') {
-            console.error(`Cổng ${PORT} đã được sử dụng. Thử lại sau.`);
-            process.exit(1); // Thoát nếu cổng đã được sử dụng
-        } else {
-            console.error('Lỗi máy chủ:', err);
-            process.exit(1); // Thoát với lỗi khác
-        }
+        console.error('Lỗi máy chủ:', err);
     });
 };
 
 startServer();
 
 process.on('uncaughtException', (err: Error) => {
-    console.log('Ngoại lệ không được bắt:', err);
-    process.exit(1); // Thoát để cho pm2 khởi động lại
+    console.error('Ngoại lệ không được bắt:', err);
+    process.exit(1); // Thoát để `pm2` khởi động lại
 });
 
 process.on('unhandledRejection', (err: any) => {
-    console.log('Từ chối không được xử lý:', err);
-    process.exit(1); // Thoát để cho pm2 khởi động lại
+    console.error('Từ chối không được xử lý:', err);
+    process.exit(1); // Thoát để `pm2` khởi động lại
 });
 
 export default app;

@@ -3,4 +3,6 @@ migrate_database:
 docker_build:
 	docker-compose up --build
 pm2_start:
-	pm2 start dist/index.js --name your-app-name
+	pm2 start ecosystem.config.js &&
+	pm2 startup &&
+	pm2 save
