@@ -19,7 +19,10 @@ const HOST = `${process.env.APP_HOST}`;
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }));
+
 app.use(express.static(path.join(__dirname, '../')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
