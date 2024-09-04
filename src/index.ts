@@ -28,23 +28,12 @@ app.use(morgan('combined'))
 
 app.use("/api", router);
 
-// const sslOptions = {
-//     key: fs.readFileSync(path.resolve(__dirname, 'keys/server.key')),
-//     cert: fs.readFileSync(path.resolve(__dirname, 'keys/server.crt')),
-// };
+const sslOptions = {
+    key: fs.readFileSync(path.resolve(__dirname, 'keys/server.key')),
+    cert: fs.readFileSync(path.resolve(__dirname, 'keys/server.crt')),
+};
 
-// https.createServer(sslOptions, app).listen(PORT, HOST, async () => {
-//     try {
-//         setUpEmitter();
-//         await init();
-//         console.log(`Server is listening on https://${HOST}:${PORT}`);
-//     } catch (error) {
-//         console.log(error);
-//     }
-// });
-
-
-app.listen(PORT, HOST, async () => {
+https.createServer(sslOptions, app).listen(PORT, HOST, async () => {
     try {
         setUpEmitter();
         await init();
@@ -52,7 +41,18 @@ app.listen(PORT, HOST, async () => {
     } catch (error) {
         console.log(error);
     }
-})
+});
+
+
+// app.listen(PORT, HOST, async () => {
+//     try {
+//         setUpEmitter();
+//         await init();
+//         console.log(`Server is listening on https://${HOST}:${PORT}`);
+//     } catch (error) {
+//         console.log(error);
+//     }
+// })
 
 
 export default app;
