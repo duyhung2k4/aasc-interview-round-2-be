@@ -24,8 +24,7 @@ app.use(cors({
 app.use(express.static(path.join(__dirname, '../')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.use(morgan('combined'))
-
+app.use(morgan('combined'));
 
 app.use("/api", router);
 
@@ -35,40 +34,40 @@ const sslOptions = {
 };
 
 const startServer = () => {
-    https.createServer(sslOptions, app).listen(PORT, HOST, async () => {
+    const server = https.createServer(sslOptions, app);
+
+    server.listen(PORT, HOST, async () => {
         try {
             setUpEmitter();
             await init();
             console.log(`Server is listening on https://${HOST}:${PORT}`);
         } catch (error) {
             console.log('Lỗi khi khởi tạo máy chủ:', error);
-            process.exit(1);
+            server.close(() => process.exit(1)); // Đóng máy chủ và thoát
+        }
+    });
+
+    server.on('error', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+            console.error(`Cổng ${PORT} đã được sử dụng. Thử lại sau.`);
+            process.exit(1); // Thoát nếu cổng đã được sử dụng
+        } else {
+            console.error('Lỗi máy chủ:', err);
+            process.exit(1); // Thoát với lỗi khác
         }
     });
 };
 
-process.on('uncaughtException', (err) => {
-    console.log('Ngoại lệ không được bắt:', err);
-    startServer();
-});
-
-process.on('unhandledRejection', (err) => {
-    console.log('Từ chối không được xử lý:', err);
-    startServer();
-});
-
 startServer();
 
-// https.createServer(sslOptions, app).listen(PORT, HOST, async () => {
-//     try {
-//         setUpEmitter();
-//         await init();
-//         console.log(`Server is listening on https://${HOST}:${PORT}`);
-//     } catch (error) {
-//         process.exit(1);
-//     }
-// });
+process.on('uncaughtException', (err: Error) => {
+    console.log('Ngoại lệ không được bắt:', err);
+    process.exit(1); // Thoát để cho pm2 khởi động lại
+});
 
-
+process.on('unhandledRejection', (err: any) => {
+    console.log('Từ chối không được xử lý:', err);
+    process.exit(1); // Thoát để cho pm2 khởi động lại
+});
 
 export default app;
