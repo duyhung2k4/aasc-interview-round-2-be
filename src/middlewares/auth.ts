@@ -40,11 +40,11 @@ export class AuthMiddleware {
             const isBefore = dayjs() < dayjs(tokenInfo.exp);
 
 
-            const urlGetToken = await this.authService.getRefreshToken(token);
-            if (urlGetToken instanceof Error) {
-                throw urlGetToken;
-            }
-            req.query.urlGetToken = urlGetToken;
+            // const urlGetToken = await this.authService.getRefreshToken(token);
+            // if (urlGetToken instanceof Error) {
+            //     throw urlGetToken;
+            // }
+            // req.query.urlGetToken = urlGetToken;
 
             
             if(isBefore) {
