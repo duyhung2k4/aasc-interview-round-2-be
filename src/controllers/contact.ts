@@ -50,25 +50,6 @@ export class ContactController {
             }
             const bitrixData = JSON.parse(dataAccessKey) as { bitrixUrl: string };
 
-            console.log(data);
-
-            console.log({
-                baseUrl: bitrixData.bitrixUrl,
-                data: {
-                    url: API_BITRIX.CRM.contact.add,
-                    method: "POST",
-                    data: {
-                        fields: {
-                            ...data,
-                            "OPENED": "Y",
-                        },
-                    },
-                    params: {
-                        auth,
-                    }
-                }
-            });
-
             const result = await this.queryUtils.axiosBaseQuery<AddContactResult>({
                 baseUrl: bitrixData.bitrixUrl,
                 data: {
