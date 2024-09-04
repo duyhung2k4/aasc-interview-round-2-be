@@ -1,4 +1,6 @@
 export type CRM_Multifield = {
-    VALUE: string
+    ID?: string
     VALUE_TYPE: string
+    VALUE: string
+    TYPE_ID?: string
 }
