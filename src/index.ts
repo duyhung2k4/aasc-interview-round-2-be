@@ -34,26 +34,31 @@ const sslOptions = {
     cert: fs.readFileSync(path.resolve(__dirname, 'keys/server.crt')),
 };
 
-https.createServer(sslOptions, app).listen(PORT, HOST, async () => {
-    try {
-        setUpEmitter();
-        await init();
-        console.log(`Server is listening on https://${HOST}:${PORT}`);
-    } catch (error) {
-        console.log(error);
-    }
+const startServer = () => {
+    https.createServer(sslOptions, app).listen(PORT, HOST, async () => {
+        try {
+            setUpEmitter();
+            await init();
+            console.log(`Server is listening on https://${HOST}:${PORT}`);
+        } catch (error) {
+            console.log('Lỗi khi khởi tạo máy chủ:', error);
+            process.exit(1);
+        }
+    });
+};
+
+process.on('uncaughtException', (err) => {
+    console.log('Ngoại lệ không được bắt:', err);
+    startServer();
 });
 
+process.on('unhandledRejection', (err) => {
+    console.log('Từ chối không được xử lý:', err);
+    startServer();
+});
 
-// app.listen(PORT, HOST, async () => {
-//     try {
-//         setUpEmitter();
-//         await init();
-//         console.log(`Server is listening on https://${HOST}:${PORT}`);
-//     } catch (error) {
-//         console.log(error);
-//     }
-// })
+startServer();
+
 
 
 export default app;
