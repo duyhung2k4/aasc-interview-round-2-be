@@ -17,10 +17,8 @@ const PORT = Number(process.env.APP_PORT);
 const HOST = `${process.env.APP_HOST}`;
 
 app.use(cors({
-    origin: '*',
+    origin: 'https://aasc-round-2-fe.vercel.app',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
 }));
 
 app.use(express.static(path.join(__dirname, '../')));
