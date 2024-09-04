@@ -27,6 +27,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(morgan('combined'));
 
+app.get("/", (req, res) => { res.json({ mess: "done" }) });
 app.use("/api", router);
 
 const sslOptions = {
