@@ -16,10 +16,7 @@ const app = express();
 const PORT = Number(process.env.APP_PORT);
 const HOST = `${process.env.APP_HOST}`;
 
-app.use(cors({
-    origin: 'https://aasc-round-2-fe.vercel.app',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-}));
+app.options('*', cors()); // Cho phép tất cả các preflight requests
 
 app.use(express.static(path.join(__dirname, '../')));
 app.use(bodyParser.urlencoded({ extended: false }));
