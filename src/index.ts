@@ -9,7 +9,6 @@ import router from "./routers";
 import init from "./config/init";
 import fs from "fs";
 import { setUpEmitter } from "./config/emit";
-import { Client } from 'pg';
 
 dotenv.config();
 
@@ -35,55 +34,10 @@ const sslOptions = {
     cert: fs.readFileSync(path.resolve(__dirname, 'keys/server.crt')),
 };
 
-const startServer = async () => {
-    try {
-        await init();
-        setUpEmitter();
-        https.createServer(sslOptions, app).listen(PORT, HOST, () => {
-            console.log(`Server is listening on https://${HOST}:${PORT}`);
-        });
-    } catch (error) {
-        console.error('Lỗi khi khởi tạo máy chủ:', error);
-        process.exit(1);
-    }
-};
-
-const checkPostgresConnection = async () => {
-    const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-    });
-
-    try {
-        await client.connect();
-        console.log('PostgreSQL connected successfully!');
-    } catch (error) {
-        console.error('Lỗi kết nối PostgreSQL:', error);
-        process.exit(1);
-    } finally {
-        await client.end();
-    }
-};
-
-process.on('uncaughtException', (err) => {
-    console.error('Ngoại lệ không được bắt:', err);
-    process.exit(1);
+https.createServer(sslOptions, app).listen(PORT, HOST, async () => {
+    await init();
+    setUpEmitter();
+    console.log(`Server is listening on https://${HOST}:${PORT}`);
 });
-
-process.on('unhandledRejection', (err) => {
-    console.error('Từ chối không được xử lý:', err);
-    process.exit(1);
-});
-
-checkPostgresConnection().then(startServer);
-
-// app.listen(PORT, HOST, async () => {
-//     try {
-//         await init();
-//         setUpEmitter();
-//         console.log(`Server is listening on http://${HOST}:${PORT}`);
-//     } catch (error) {
-//         console.log(error);
-//     }
-// })
 
 export default app;
